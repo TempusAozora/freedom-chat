@@ -1,6 +1,8 @@
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
+import { createWebsocket } from './ws-server.mjs';
+
 import 'dotenv/config';
 import pug from 'pug';
 
@@ -11,6 +13,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function getStylesheet(fileName) {
     return path.join(__dirname, 'public', 'stylesheet', `${fileName}.css`)
+}
+
+function getJSFile(fileName) {
+    return path.join(__dirname, 'public', 'javascript', `${fileName}.js`)
 }
 
 function getViewsFile(fileName) {
@@ -28,9 +34,14 @@ const server = http.createServer((req, res) => {
                 res.write(index);
                 break;
             case '/index.css':
-                const fileContent = fs.readFileSync(getStylesheet('index'), 'utf-8');
+                const cssFile = fs.readFileSync(getStylesheet('index'), 'utf-8');
                 res.writeHead(200, { 'Content-Type': 'text/css' });
-                res.write(fileContent);
+                res.write(cssFile);
+                break;
+            case '/index.js':
+                const jsFile = fs.readFileSync(getJSFile('index'), 'utf-8');
+                res.writeHead(200, { 'Content-Type': 'text/js' });
+                res.write(jsFile);
                 break;
             default:
                 res.writeHead(404);
@@ -47,4 +58,7 @@ const PORT = process.env.PORT || 3000
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
+
+createWebsocket(server)
+
 
