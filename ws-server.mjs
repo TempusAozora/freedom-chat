@@ -1,19 +1,30 @@
 import { WebSocketServer } from 'ws';
 import { sql_query } from './modules/sql_handler.mjs';
+import jwt from 'jsonwebtoken';
 
 function errorHandler(err) {
     console.error(err);
+}
+
+function getCookie(key, req) {
+    const value = `; ${req.headers.cookie}`;
+    const parts = value.split(`; ${key}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
 }
 
 export function createWebsocket(server) {
     const wss = new WebSocketServer({noServer: true});
 
     server.on('upgrade', function(req, socket, header) {
-        // no validation yet
         // socket.on('error', errorHandler);
 
         if (req.url === '/index-ws') {
+            const ipToken = getCookie('ipToken', req);
+            const ipData = jwt.decode(ipToken, process.env.IP_TOKEN_KEY);
+            console.log(ipData);
+
             wss.handleUpgrade(req, socket, header, function(ws) {
+                ws.ip = ipData.ip_address;
                 wss.emit('connection', ws, req);
             });
         }
@@ -26,15 +37,12 @@ export function createWebsocket(server) {
 
         ws.on('message', async function(_data) {
             const data = JSON.parse(_data);
-            const ip = !!req.headers['x-forwarded-for'] ? 
-                req.headers['x-forwarded-for'].split(/\s*,\s*/)[0] :
-                req.socket.remoteAddress;
             
             if (data.type === "chat_send_message") {
                 const msg = data.content;
                 if (msg.trim().length === 0) return;
 
-                const timestamp_data = await sql_query('insert_message', [ip, msg]);
+                const timestamp_data = await sql_query('insert_message', [ws.ip, msg]);
                 const message_data = {timestamp: timestamp_data[0].timestamp, message: msg};
                 update_chat(message_data);
             }
