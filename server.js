@@ -30,7 +30,6 @@ const server = http.createServer(async(req, res) => {
         switch (req.url) {
             case '/':
                 const chat_messages = await sql_query('get_message_history');
-                console.log(chat_messages);
 
                 const index = pug.renderFile(getViewsFile('index'), {chat_messages: chat_messages});
                 res.writeHead(200, { 'Content-Type': 'text/html' });
