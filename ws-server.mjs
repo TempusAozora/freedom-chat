@@ -26,7 +26,9 @@ export function createWebsocket(server) {
 
         ws.on('message', async function(_data) {
             const data = JSON.parse(_data);
-            const ip = req.socket.remoteAddress;
+            const ip = !!req.headers['x-forwarded-for'] ? 
+                req.headers['x-forwarded-for'].split(/\s*,\s*/)[0] :
+                req.socket.remoteAddress;
 
             if (data.type === "chat_send_message") {
                 const msg = data.content;
