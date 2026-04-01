@@ -31,7 +31,7 @@ export function createWebsocket(server) {
                 req.headers['x-forwarded-for'].split(/\s*,\s*/)[0] :
                 req.socket.remoteAddress;
 
-            console.log(req)
+            console.log(req.headers)
             if (data.type === "chat_send_message") {
                 const msg = data.content;
                 if (msg.trim().length === 0) return;
