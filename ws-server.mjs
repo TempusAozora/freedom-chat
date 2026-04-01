@@ -1,4 +1,5 @@
 import { WebSocketServer } from 'ws';
+import { sql_query } from './modules/sql_handler.mjs';
 
 function errorHandler(err) {
     console.error(err);
@@ -9,7 +10,7 @@ export function createWebsocket(server) {
 
     server.on('upgrade', function(req, socket, header) {
         // no validation yet
-        socket.on('error', errorHandler);
+        // socket.on('error', errorHandler);
         
         if (req.url === '/index-ws') {
             wss.handleUpgrade(req, socket, header, function(ws) {
@@ -23,11 +24,15 @@ export function createWebsocket(server) {
 
         ws.on('err', errorHandler);
 
-        ws.on('message', function(_data) {
+        ws.on('message', async function(_data) {
             const data = JSON.parse(_data);
+            const ip = req.socket.remoteAddress;
+
             if (data.type === "chat_send_message") {
                 const msg = data.content;
-                console.log("Received message: " + msg);
+                const timestamp_data = await sql_query('insert_message', [ip, msg]);
+                const message_data = {timestamp: timestamp_data[0].timestamp, message: msg};
+                update_chat(message_data);
             }
         });
 
@@ -35,4 +40,11 @@ export function createWebsocket(server) {
             console.log("Client left.")
         })
     })
+
+    function update_chat(message_data) {
+        wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.CLOSED) return;
+            client.send(JSON.stringify(message_data))
+        });
+    }
 }
