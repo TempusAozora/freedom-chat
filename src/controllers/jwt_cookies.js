@@ -23,16 +23,15 @@ export function parseCookies(secretKey, BYPASS_UPGRADE=false) {
         let cookies = cookie_raw.split(`; `);
         cookies.shift();
 
-        const token_cookies = await new Promise((resolve) => {
-            const result = cookies.reduce( async (acc, curr) => {
-                const [key, value] = curr.split('=');
-                const decoded = await jwt.decode(value, secretKey);
-                acc[key] = decoded && decoded.payload;
-                return acc;
-            }, {});
-            
-            resolve(result);
-        });
+        const token_cookies = Object.fromEntries(
+            await Promise.all(
+                cookies.map(async (str) => {
+                    const [key, value] = str.split('=');
+                    const decoded = await jwt.decode(value, secretKey);
+                    return [key, decoded && decoded.payload];
+                })
+            )
+        );
 
         req.token_cookie = token_cookies;
         next && next();
