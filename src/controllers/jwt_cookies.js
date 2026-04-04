@@ -4,7 +4,7 @@ export function tokenCookies(secretkey) {
     return function(req, res, next) {  
         const original_cookies = res.cookie;
 
-        res.cookie = async function(key, value, options) {
+        res.cookie = async function(key, value, options) { // Will soon make it expire after 7 days.
             const token = await jwt.sign({payload: value}, secretkey);
             original_cookies.call(this, key, token, options);
         };
@@ -27,7 +27,7 @@ export function parseCookies(secretKey, BYPASS_UPGRADE=false) {
             const result = cookies.reduce( async (acc, curr) => {
                 const [key, value] = curr.split('=');
                 const decoded = await jwt.decode(value, secretKey);
-                acc[key] = decoded.payload;
+                acc[key] = decoded && decoded.payload;
                 return acc;
             }, {});
             
